@@ -1,5 +1,5 @@
 "use client";
-import { quizCreationSchema } from "@/schemas/forms/quiz";
+import { reportCreationSchema } from "@/schemas/forms/report";
 import React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -13,10 +13,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { BookOpen, CopyCheck } from "lucide-react";
-import { Separator } from "../ui/separator";
 import axios, { AxiosError } from "axios";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "../ui/use-toast";
@@ -34,26 +41,25 @@ type Props = {
   topic: string;
 };
 
-type Input = z.infer<typeof quizCreationSchema>;
+type Input = z.infer<typeof reportCreationSchema>;
 
-const QuizCreation = ({ topic: topicParam }: Props) => {
+const ReportCreation = ({ topic: topicParam }: Props) => {
   const router = useRouter();
   const [showLoader, setShowLoader] = React.useState(false);
   const [finishedLoading, setFinishedLoading] = React.useState(false);
   const { toast } = useToast();
   const { mutate: getQuestions, isLoading } = useMutation({
-    mutationFn: async ({ amount, topic, type }: Input) => {
-      const response = await axios.post("/api/game", { amount, topic, type });
+    mutationFn: async ({ topic, reportType }: Input) => {
+      const response = await axios.post("/api/game", { topic, reportType });
       return response.data;
     },
   });
 
   const form = useForm<Input>({
-    resolver: zodResolver(quizCreationSchema),
+    resolver: zodResolver(reportCreationSchema),
     defaultValues: {
       topic: topicParam,
-      type: "mcq",
-      amount: 3,
+      reportType: "research"
     },
   });
 
@@ -74,13 +80,13 @@ const QuizCreation = ({ topic: topicParam }: Props) => {
       },
       onSuccess: ({ gameId }: { gameId: string }) => {
         setFinishedLoading(true);
-        setTimeout(() => {
-          if (form.getValues("type") === "mcq") {
-            router.push(`/play/mcq/${gameId}`);
-          } else if (form.getValues("type") === "open_ended") {
-            router.push(`/play/open-ended/${gameId}`);
-          }
-        }, 2000);
+        // setTimeout(() => {
+        //   if (form.getValues("type") === "mcq") {
+        //     router.push(`/play/mcq/${gameId}`);
+        //   } else if (form.getValues("type") === "open_ended") {
+        //     router.push(`/play/open-ended/${gameId}`);
+        //   }
+        // }, 2000);
       },
     });
   };
@@ -94,8 +100,8 @@ const QuizCreation = ({ topic: topicParam }: Props) => {
     <div className="absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Quiz Creation</CardTitle>
-          <CardDescription>Choose a topic</CardDescription>
+          <CardTitle className="text-2xl font-bold">Generate a report</CardTitle>
+          <CardDescription>Provide the topic</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -110,8 +116,7 @@ const QuizCreation = ({ topic: topicParam }: Props) => {
                       <Input placeholder="Enter a topic" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Please provide any topic you would like to be quizzed on
-                      here.
+                      Please provide any topic you would like to automatically generate a report on.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -119,60 +124,40 @@ const QuizCreation = ({ topic: topicParam }: Props) => {
               />
               <FormField
                 control={form.control}
-                name="amount"
+                name="reportType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Number of Questions</FormLabel>
+                    <FormLabel>Select the type of report</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="How many questions?"
-                        type="number"
-                        {...field}
-                        onChange={(e) => {
-                          form.setValue("amount", parseInt(e.target.value));
+                      <Select
+                        onValueChange={(value) => {
+                          form.setValue("reportType", value);
                         }}
-                        min={1}
-                        max={10}
-                      />
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Select a report type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Report Types</SelectLabel>
+                            <SelectItem value="research">Research Report</SelectItem>
+                            <SelectItem value="resource">Resource Report</SelectItem>
+                            <SelectItem value="outline">Outline Report</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
+
                     <FormDescription>
-                      You can choose how many questions you would like to be
-                      quizzed on here.
+                      You can choose the type of report you want to generate automatically here.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="flex justify-between">
-                <Button
-                  variant={
-                    form.getValues("type") === "mcq" ? "default" : "secondary"
-                  }
-                  className="w-1/2 rounded-none rounded-l-lg"
-                  onClick={() => {
-                    form.setValue("type", "mcq");
-                  }}
-                  type="button"
-                >
-                  <CopyCheck className="w-4 h-4 mr-2" /> Multiple Choice
-                </Button>
-                <Separator orientation="vertical" />
-                <Button
-                  variant={
-                    form.getValues("type") === "open_ended"
-                      ? "default"
-                      : "secondary"
-                  }
-                  className="w-1/2 rounded-none rounded-r-lg"
-                  onClick={() => form.setValue("type", "open_ended")}
-                  type="button"
-                >
-                  <BookOpen className="w-4 h-4 mr-2" /> Open Ended
-                </Button>
-              </div>
               <Button disabled={isLoading} type="submit">
-                Submit
+                Generate
               </Button>
             </form>
           </Form>
@@ -182,4 +167,4 @@ const QuizCreation = ({ topic: topicParam }: Props) => {
   );
 };
 
-export default QuizCreation;
+export default ReportCreation;

@@ -1,6 +1,6 @@
 import HistoryCard from "@/components/dashboard/HistoryCard";
 import HotTopicsCard from "@/components/dashboard/HotTopicsCard";
-import QuizMeCard from "@/components/dashboard/QuizMeCard";
+import ReportCard from "@/components/dashboard/ReportCard";
 import RecentActivityCard from "@/components/dashboard/RecentActivityCard";
 import { getAuthSession } from "@/lib/nextauth";
 import { redirect } from "next/navigation";
@@ -9,8 +9,8 @@ import React from "react";
 type Props = {};
 
 export const metadata = {
-  title: "Dashboard | Quizmify",
-  description: "Quiz yourself on anything!",
+  title: "Dashboard | MirrorScripts",
+  description: "Automatically generate the report with references!",
 };
 
 const Dasboard = async (props: Props) => {
@@ -26,7 +26,7 @@ const Dasboard = async (props: Props) => {
       </div>
 
       <div className="grid gap-4 mt-4 md:grid-cols-2">
-        <QuizMeCard />
+        <ReportCard />
         <HistoryCard />
       </div>
       <div className="grid gap-4 mt-4 md:grid-cols-2 lg:grid-cols-7">

@@ -2,11 +2,11 @@ import React from "react";
 
 import { getAuthSession } from "@/lib/nextauth";
 import { redirect } from "next/navigation";
-import QuizCreation from "@/components/forms/QuizCreation";
+import ReportCreation from "@/components/forms/ReportCreation";
 
 export const metadata = {
-  title: "Quiz | Quizmify",
-  description: "Quiz yourself on anything!",
+  title: "Report | MirrorScripts",
+  description: "Automatically generate the report with reference!",
 };
 
 interface Props {
@@ -15,12 +15,12 @@ interface Props {
   };
 }
 
-const Quiz = async ({ searchParams }: Props) => {
+const Report = async ({ searchParams }: Props) => {
   const session = await getAuthSession();
   if (!session?.user) {
     redirect("/");
   }
-  return <QuizCreation topic={searchParams.topic ?? ""} />;
+  return <ReportCreation topic={searchParams.topic ?? ""} />;
 };
 
-export default Quiz;
+export default Report;

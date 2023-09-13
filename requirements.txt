@@ -1,6 +1,0 @@
-asyncio
-openai
-uvicorn
-pydantic
-fastapi
-langchain

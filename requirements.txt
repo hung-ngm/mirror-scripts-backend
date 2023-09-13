@@ -4,3 +4,7 @@ uvicorn
 pydantic
 fastapi
 langchain
+python-dotenv
+duckduckgo_search
+playwright
+md2pdf

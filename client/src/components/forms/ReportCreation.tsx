@@ -47,6 +47,7 @@ type Input = z.infer<typeof reportCreationSchema>;
 
 const ReportCreation = ({ topic: topicParam }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [markdownOutput, setMarkdownOutput] = useState("");
   useEffect(() => {
     const converter = new showdown.Converter();
     const socket = connectSocket();
@@ -61,6 +62,8 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
       } else if (data.type === 'report') {
         // Update your component's state with the new report
         const htmlReport = converter.makeHtml(data.output);
+        setMarkdownOutput(htmlReport);
+        console.log("markdown output:", markdownOutput);
         setFinishedLoading(true);
         setIsLoading(false);
       } else if (data.type === 'path') {

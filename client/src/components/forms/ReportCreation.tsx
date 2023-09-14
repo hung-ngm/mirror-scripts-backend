@@ -1,6 +1,7 @@
 "use client";
 import { reportCreationSchema } from "@/schemas/forms/report";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { connectSocket, sendSocketMessage, closeSocket } from '@/utils/socketUtils';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +36,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import LoadingQuestions from "../LoadingQuestions";
+import LoadingReport from "../LoadingReport";
 
 type Props = {
   topic: string;
@@ -44,60 +45,91 @@ type Props = {
 type Input = z.infer<typeof reportCreationSchema>;
 
 const ReportCreation = ({ topic: topicParam }: Props) => {
+  const [isLoading, setIsLoading] = useState(false);
+  useEffect(() => {
+    const socket = connectSocket();
+
+    socket.onmessage = (event: MessageEvent) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === 'logs') {
+        // Update your component's state with the new log message
+        console.log("logs: ", data);
+        setIsLoading(true);
+      } else if (data.type === 'report') {
+        // Update your component's state with the new report
+        setFinishedLoading(true);
+        setIsLoading(false);
+      } else if (data.type === 'path') {
+        // Update your component's state with the new download link
+        console.log("path: ", data);
+      }
+    };
+
+    return () => {
+      closeSocket();
+    }
+  }, [])
+
   const router = useRouter();
-  const [showLoader, setShowLoader] = React.useState(false);
-  const [finishedLoading, setFinishedLoading] = React.useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const [finishedLoading, setFinishedLoading] = useState(false);
   const { toast } = useToast();
-  const { mutate: getQuestions, isLoading } = useMutation({
-    mutationFn: async ({ topic, reportType }: Input) => {
-      const response = await axios.post("/api/game", { topic, reportType });
-      return response.data;
-    },
-  });
+  // const { mutate: getQuestions, isLoading } = useMutation({
+  //   mutationFn: async ({ topic, reportType }: Input) => {
+  //     const response = await axios.post("/api/game", { topic, reportType });
+  //     return response.data;
+  //   },
+  // });
+  
 
   const form = useForm<Input>({
     resolver: zodResolver(reportCreationSchema),
     defaultValues: {
-      topic: topicParam,
-      reportType: "research"
+      task: topicParam,
+      report_type: "research_report",
+      agent: "Auto Agent"
     },
   });
 
   const onSubmit = async (data: Input) => {
     setShowLoader(true);
-    getQuestions(data, {
-      onError: (error) => {
-        setShowLoader(false);
-        if (error instanceof AxiosError) {
-          if (error.response?.status === 500) {
-            toast({
-              title: "Error",
-              description: "Something went wrong. Please try again later.",
-              variant: "destructive",
-            });
-          }
-        }
-      },
-      onSuccess: ({ gameId }: { gameId: string }) => {
-        setFinishedLoading(true);
-        // setTimeout(() => {
-        //   if (form.getValues("type") === "mcq") {
-        //     router.push(`/play/mcq/${gameId}`);
-        //   } else if (form.getValues("type") === "open_ended") {
-        //     router.push(`/play/open-ended/${gameId}`);
-        //   }
-        // }, 2000);
-      },
-    });
+    // getQuestions(data, {
+    //   onError: (error) => {
+    //     setShowLoader(false);
+    //     if (error instanceof AxiosError) {
+    //       if (error.response?.status === 500) {
+    //         toast({
+    //           title: "Error",
+    //           description: "Something went wrong. Please try again later.",
+    //           variant: "destructive",
+    //         });
+    //       }
+    //     }
+    //   },
+    //   onSuccess: ({ gameId }: { gameId: string }) => {
+    //     setFinishedLoading(true);
+    //     // setTimeout(() => {
+    //     //   if (form.getValues("type") === "mcq") {
+    //     //     router.push(`/play/mcq/${gameId}`);
+    //     //   } else if (form.getValues("type") === "open_ended") {
+    //     //     router.push(`/play/open-ended/${gameId}`);
+    //     //   }
+    //     // }, 2000);
+    //   },
+    // });
+
+    console.log(data);
+    sendSocketMessage(`start ${JSON.stringify(data)}`);
   };
   form.watch();
 
   if (showLoader) {
-    return <LoadingQuestions finished={finishedLoading} />;
+    return <LoadingReport finished={finishedLoading} />;
   }
 
   return (
-    <div className="absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2">
+    <div className="absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 w-3/5">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Generate a report</CardTitle>
@@ -108,7 +140,7 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
                 control={form.control}
-                name="topic"
+                name="task"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Topic</FormLabel>
@@ -124,14 +156,14 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
               />
               <FormField
                 control={form.control}
-                name="reportType"
+                name="report_type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Select the type of report</FormLabel>
                     <FormControl>
                       <Select
                         onValueChange={(value) => {
-                          form.setValue("reportType", value);
+                          form.setValue("report_type", value);
                         }}
                       >
                         <SelectTrigger className="w-[180px]">
@@ -140,9 +172,9 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
                         <SelectContent>
                           <SelectGroup>
                             <SelectLabel>Report Types</SelectLabel>
-                            <SelectItem value="research">Research Report</SelectItem>
-                            <SelectItem value="resource">Resource Report</SelectItem>
-                            <SelectItem value="outline">Outline Report</SelectItem>
+                            <SelectItem value="research_report">Research Report</SelectItem>
+                            <SelectItem value="resource_report">Resource Report</SelectItem>
+                            <SelectItem value="outline_report">Outline Report</SelectItem>
                           </SelectGroup>
                         </SelectContent>
                       </Select>

@@ -1,4 +1,10 @@
+#Ignore env containing secrets
 .env
-env
+#Ignore Virtual Env
+env/
+#Ignore generated outputs
+outputs/
+#Ignore pycache
+**/__pycache__/
 
-mirror_scripts_agent/env
+**/*.pdf.crdownload

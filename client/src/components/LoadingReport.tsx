@@ -5,14 +5,13 @@ import Image from "next/image";
 type Props = { finished: boolean };
 
 const loadingTexts = [
-  "Generating questions...",
-  "Unleashing the power of curiosity...",
-  "Diving deep into the ocean of questions..",
-  "Harnessing the collective knowledge of the cosmos...",
-  "Igniting the flame of wonder and exploration...",
+  "Generating report...",
+  "Finding all resources on the Internet...",
+  "Diving deep into each material...",
+  "Gathering key information from all documents...",
 ];
 
-const LoadingQuestions = ({ finished }: Props) => {
+const LoadingReport = ({ finished }: Props) => {
   const [progress, setProgress] = React.useState(10);
   const [loadingText, setLoadingText] = React.useState(loadingTexts[0]);
   React.useEffect(() => {
@@ -41,11 +40,11 @@ const LoadingQuestions = ({ finished }: Props) => {
 
   return (
     <div className="absolute -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2 w-[70vw] md:w-[60vw] flex flex-col items-center">
-      <Image src={"/loading.gif"} width={400} height={400} alt="loading" />
+      <Image src={"/researching.gif"} width={400} height={400} alt="loading" />
       <Progress value={progress} className="w-full mt-4" />
       <h1 className="mt-2 text-xl">{loadingText}</h1>
     </div>
   );
 };
 
-export default LoadingQuestions;
+export default LoadingReport;

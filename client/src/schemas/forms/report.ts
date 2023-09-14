@@ -1,13 +1,11 @@
 import { z } from "zod";
 
 export const reportCreationSchema = z.object({
-  topic: z
+  task: z
     .string()
-    .min(4, {
-      message: "Topic must be at least 4 characters long",
-    })
-    .max(50, {
-      message: "Topic must be at most 50 characters long",
+    .min(5, {
+      message: "Topic must be at least 5 characters long",
     }),
-  reportType: z.string(),
+  report_type: z.string(),
+  agent: z.string(),
 });

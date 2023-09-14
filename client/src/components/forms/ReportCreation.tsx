@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import showdown from 'showdown';
 import axios, { AxiosError } from "axios";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "../ui/use-toast";
@@ -47,6 +48,7 @@ type Input = z.infer<typeof reportCreationSchema>;
 const ReportCreation = ({ topic: topicParam }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
+    const converter = new showdown.Converter();
     const socket = connectSocket();
 
     socket.onmessage = (event: MessageEvent) => {
@@ -58,6 +60,7 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
         setIsLoading(true);
       } else if (data.type === 'report') {
         // Update your component's state with the new report
+        const htmlReport = converter.makeHtml(data.output);
         setFinishedLoading(true);
         setIsLoading(false);
       } else if (data.type === 'path') {

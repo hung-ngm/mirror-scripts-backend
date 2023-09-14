@@ -6,7 +6,7 @@ let socket: WebSocket | null = null;
 export function connectSocket(): WebSocket {
     if (!socket || socket.readyState === WebSocket.CLOSED) {
         const { protocol } = window.location;
-        socket = new WebSocket(`${protocol === 'https:' ? 'wss:' : 'ws:'}://${getHostName()}/ws`);
+        socket = new WebSocket(`${protocol === 'https:' ? 'wss:' : 'ws:'}//${getHostName()}/ws`);
 
         socket.onopen = () => {
           console.log('WebSocket is connected.');

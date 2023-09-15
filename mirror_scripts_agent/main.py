@@ -3,6 +3,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import json
 import os
+import asyncio
+import traceback
 
 from agent.llm_utils import choose_agent
 from agent.run import WebSocketManager
@@ -63,6 +65,14 @@ async def websocket_endpoint(websocket: WebSocket):
                     await manager.start_streaming(task, report_type, agent, agent_role_prompt, websocket)
                 else:
                     print("Error: not enough parameters provided.")
+            # Heartbeat mechanism
+            while True:
+                await websocket.send_text('ping')
+                await asyncio.sleep(10)  # Send a ping every 10 seconds
+
+    except Exception as e:
+        print(f"Error: {e}")
+        traceback.print_exc()  # This will print the full traceback
 
     except WebSocketDisconnect:
         await manager.disconnect(websocket)

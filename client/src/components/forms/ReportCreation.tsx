@@ -55,10 +55,10 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
   useEffect(() => {
     const socket = connectSocket();
 
-    // Send a ping message every 5 seconds
-    const intervalId = setInterval(() => {
-      socket.send('ping');
-    }, 5000);
+    // // Send a ping message every 5 seconds
+    // const intervalId = setInterval(() => {
+    //   socket.send('ping');
+    // }, 5000);
 
     socket.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);

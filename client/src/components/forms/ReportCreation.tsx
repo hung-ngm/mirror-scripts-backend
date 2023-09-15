@@ -37,6 +37,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useDataOutput } from "@/hooks/useDataOutput";
 import LoadingReport from "../LoadingReport";
 
 type Props = {
@@ -47,9 +48,11 @@ type Input = z.infer<typeof reportCreationSchema>;
 
 const ReportCreation = ({ topic: topicParam }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [markdownOutput, setMarkdownOutput] = useState("");
+  // const [dataOutput, setDataOutput] = useState("");
+  const router = useRouter();
+  const { dataOutput, setDataOutput } = useDataOutput();
+
   useEffect(() => {
-    const converter = new showdown.Converter();
     const socket = connectSocket();
 
     socket.onmessage = (event: MessageEvent) => {
@@ -59,13 +62,18 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
         // Update your component's state with the new log message
         console.log("logs: ", data);
         setIsLoading(true);
+
+        if (data.output.startsWith("\nTotal run time:")) {
+          router.push('/result');
+          setFinishedLoading(true);
+          setIsLoading(false);
+        }
+
       } else if (data.type === 'report') {
-        // Update your component's state with the new report
-        const htmlReport = converter.makeHtml(data.output);
-        setMarkdownOutput(htmlReport);
-        console.log("markdown output:", markdownOutput);
-        setFinishedLoading(true);
-        setIsLoading(false);
+        setDataOutput((prevDataOutput: string) => prevDataOutput + data.output);
+        console.log("report: ", data.output);
+        console.log(dataOutput);
+
       } else if (data.type === 'path') {
         // Update your component's state with the new download link
         console.log("path: ", data);
@@ -75,9 +83,8 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
     return () => {
       closeSocket();
     }
-  }, [])
+  }, [router, setDataOutput])
 
-  const router = useRouter();
   const [showLoader, setShowLoader] = useState(false);
   const [finishedLoading, setFinishedLoading] = useState(false);
   const { toast } = useToast();
@@ -124,6 +131,14 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
     //     // }, 2000);
     //   },
     // });
+
+    // });
+    // if (finishedLoading) {
+    //   router.push({
+    //     pathname: '/result',
+    //     query: { dataOutput },
+    //   });
+    // };
 
     console.log(data);
     sendSocketMessage(`start ${JSON.stringify(data)}`);

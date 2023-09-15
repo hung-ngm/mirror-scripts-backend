@@ -1,4 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import json
@@ -16,8 +17,17 @@ class ResearchRequest(BaseModel):
     agent: str
 
 
-
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    # Change to domains if you deploy this to production
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # app.mount("/site", StaticFiles(directory="client"), name="site")
 # app.mount("/static", StaticFiles(directory="client/static"), name="static")
 # Dynamic directory for outputs once first research is run

@@ -25,4 +25,4 @@ USER mirror-scripts
 COPY --chown=mirror-scripts:mirror-scripts ./ ./
 
 EXPOSE 8000
-CMD uvicorn main:app --host 0.0.0.0 --port $PORT --ws-ping-interval 300 --ws-ping-timeout 600 --timeout-keep-alive 900
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT --ws-ping-interval 600 --ws-ping-timeout 1200 --timeout-keep-alive 1800

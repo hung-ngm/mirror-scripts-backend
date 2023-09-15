@@ -63,32 +63,36 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
     socket.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === 'logs') {
-        // Update your component's state with the new log message
-        console.log("logs: ", data);
-        setIsLoading(true);
-
-        if (data.output.startsWith("\nTotal run time:")) {
-          router.push('/result');
-          setFinishedLoading(true);
-          setIsLoading(false);
+      if (data === 'ping') {
+        socket.send('pong');
+      } else {
+        if (data.type === 'logs') {
+          // Update your component's state with the new log message
+          console.log("logs: ", data);
+          setIsLoading(true);
+  
+          if (data.output.startsWith("\nTotal run time:")) {
+            router.push('/result');
+            setFinishedLoading(true);
+            setIsLoading(false);
+          }
+  
+        } else if (data.type === 'report') {
+          setDataOutput((prevDataOutput: string) => prevDataOutput + data.output);
+          console.log("report: ", data.output);
+          console.log(dataOutput);
+  
+        } else if (data.type === 'path') {
+          // Update your component's state with the new download link
+          console.log("path: ", data);
         }
-
-      } else if (data.type === 'report') {
-        setDataOutput((prevDataOutput: string) => prevDataOutput + data.output);
-        console.log("report: ", data.output);
-        console.log(dataOutput);
-
-      } else if (data.type === 'path') {
-        // Update your component's state with the new download link
-        console.log("path: ", data);
-      }
-    };
+      };
+    }
 
     return () => {
       closeSocket();
     }
-  }, [router, setDataOutput])
+  }, [dataOutput, router, setDataOutput])
 
   const [showLoader, setShowLoader] = useState(false);
   const [finishedLoading, setFinishedLoading] = useState(false);

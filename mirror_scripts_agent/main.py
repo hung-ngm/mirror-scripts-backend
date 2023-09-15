@@ -47,6 +47,9 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
+            if data == 'pong':
+                print("Pong received")
+
             if data.startswith("start"):
                 json_data = json.loads(data[6:])
                 task = json_data.get("task")
@@ -69,10 +72,6 @@ async def websocket_endpoint(websocket: WebSocket):
             while True:
                 await websocket.send_text('ping')
                 await asyncio.sleep(10)  # Send a ping every 10 seconds
-
-    except Exception as e:
-        print(f"Error: {e}")
-        traceback.print_exc()  # This will print the full traceback
 
     except WebSocketDisconnect:
         await manager.disconnect(websocket)

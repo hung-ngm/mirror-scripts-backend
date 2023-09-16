@@ -19,6 +19,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.safari.options import Options as SafariOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.common.exceptions import WebDriverException
 from fastapi import WebSocket
 import chromedriver_autoinstaller
 
@@ -141,7 +142,17 @@ def scrape_text_with_selenium(url: str) -> tuple[WebDriver, str]:
             "prefs", {"download_restrictions": 3}
         )
         driver = webdriver.Chrome(options=options)
-    driver.get(url)
+    
+    MAX_RETRIES = 3
+    for attempt in range(MAX_RETRIES):
+        try:
+            driver.get(url)
+            break
+        except WebDriverException:
+            if attempt < MAX_RETRIES - 1:  # i.e. not the last attempt
+                time.sleep(2)  # wait for 2 seconds before trying again
+            else:
+                raise
 
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))

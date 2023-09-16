@@ -5,6 +5,7 @@ import logging
 import asyncio
 from pathlib import Path
 from sys import platform
+import time
 
 from bs4 import BeautifulSoup
 from webdriver_manager.chrome import ChromeDriverManager
@@ -119,6 +120,8 @@ def scrape_text_with_selenium(url: str) -> tuple[WebDriver, str]:
     options.add_argument(f"user-agent={CFG.user_agent}")
     options.add_argument('--headless')
     options.add_argument("--enable-javascript")
+
+    time.sleep(5)
 
     if CFG.selenium_web_browser == "firefox":
         service = Service(executable_path=GeckoDriverManager().install())

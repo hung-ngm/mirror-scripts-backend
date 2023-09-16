@@ -49,7 +49,27 @@ manager = WebSocketManager()
 @app.get("/status")
 async def status():
     return {"status": "ok", "message": "MirrorScripts is running smoothly!"}
-            
+
+
+async def handle_start_command(data: str, websocket: WebSocket):
+    json_data = json.loads(data[6:])
+    task = json_data.get("task")
+    report_type = json_data.get("report_type")
+    agent = json_data.get("agent")
+    # temporary so "normal agents" can still be used and not just auto generated, will be removed when we move to auto generated
+    if agent == "Auto Agent":
+        agent_dict = choose_agent(task)
+        agent = agent_dict.get("agent")
+        agent_role_prompt = agent_dict.get("agent_role_prompt")
+    else:
+        agent_role_prompt = None
+
+    await websocket.send_json({"type": "logs", "output": f"Initiated an Agent: {agent}"})
+
+    if task and report_type and agent:
+        asyncio.create_task(manager.start_streaming(task, report_type, agent, agent_role_prompt, websocket))
+    else:
+        print("Error: not enough parameters provided.")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -57,32 +77,9 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            if data == 'pong':
-                print("Pong received")
-
             if data.startswith("start"):
-                json_data = json.loads(data[6:])
-                task = json_data.get("task")
-                report_type = json_data.get("report_type")
-                agent = json_data.get("agent")
-                # temporary so "normal agents" can still be used and not just auto generated, will be removed when we move to auto generated
-                if agent == "Auto Agent":
-                    agent_dict = choose_agent(task)
-                    agent = agent_dict.get("agent")
-                    agent_role_prompt = agent_dict.get("agent_role_prompt")
-                else:
-                    agent_role_prompt = None
-
-                await websocket.send_json({"type": "logs", "output": f"Initiated an Agent: {agent}"})
-                if task and report_type and agent:
-                    await manager.start_streaming(task, report_type, agent, agent_role_prompt, websocket)
-                else:
-                    print("Error: not enough parameters provided.")
-            # Heartbeat mechanism
-            while True:
-                await websocket.send_text('ping')
-                await asyncio.sleep(10)  # Send a ping every 10 seconds
-
+                main_task = asyncio.create_task(handle_start_command(data, websocket))
+                await asyncio.gather(main_task)
     except WebSocketDisconnect:
         await manager.disconnect(websocket)
 

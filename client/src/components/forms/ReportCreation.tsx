@@ -1,7 +1,6 @@
 "use client";
 import { reportCreationSchema } from "@/schemas/forms/report";
 import React, { useState, useEffect } from "react";
-import { connectSocket, sendSocketMessage, closeSocket } from '@/utils/socketUtils';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +38,7 @@ import {
 } from "@/components/ui/card";
 import { useDataOutput } from "@/hooks/useDataOutput";
 import LoadingReport from "../LoadingReport";
+import useWebsocket from "@/hooks/useWebsocket";
 
 type Props = {
   topic: string;
@@ -51,48 +51,49 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
   // const [dataOutput, setDataOutput] = useState("");
   const router = useRouter();
   const { dataOutput, setDataOutput } = useDataOutput();
+  const { send, close, socketRef } = useWebsocket();
 
   useEffect(() => {
-    const socket = connectSocket();
+    const socket = socketRef.current;
 
-    // // Send a ping message every 5 seconds
+    // Send a ping message every 5 seconds
     // const intervalId = setInterval(() => {
-    //   socket.send('ping');
+    //   send(JSON.stringify({ type: 'ping' }));
     // }, 5000);
 
     socket.onmessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
 
-      if (data === 'ping') {
-        socket.send('pong');
-      } else {
-        if (data.type === 'logs') {
-          // Update your component's state with the new log message
-          console.log("logs: ", data);
-          setIsLoading(true);
-  
-          if (data.output.startsWith("\nTotal run time:")) {
-            router.push('/result');
-            setFinishedLoading(true);
-            setIsLoading(false);
-          }
-  
-        } else if (data.type === 'report') {
-          setDataOutput((prevDataOutput: string) => prevDataOutput + data.output);
-          console.log("report: ", data.output);
-          console.log(dataOutput);
-  
-        } else if (data.type === 'path') {
-          // Update your component's state with the new download link
-          console.log("path: ", data);
+      // if (data.type === 'ping') {
+      //   send(JSON.stringify({ type: 'pong' }));
+      // } else
+     
+      if (data.type === 'logs') {
+        // Update your component's state with the new log message
+        console.log("logs: ", data);
+        setIsLoading(true);
+    
+        if (data.output.startsWith("\nTotal run time:")) {
+          router.push('/result');
+          setFinishedLoading(true);
+          setIsLoading(false);
         }
-      };
-    }
+      } else if (data.type === 'report') {
+        setDataOutput((prevDataOutput: string) => prevDataOutput + data.output);
+        console.log("report: ", data.output);
+        console.log(dataOutput);
+      } else if (data.type === 'path') {
+        // Update your component's state with the new download link
+        console.log("path: ", data);
+      }
+    };
+    
 
     return () => {
-      closeSocket();
+      // clearInterval(intervalId);
+      close();
     }
-  }, [dataOutput, router, setDataOutput])
+  }, [])
 
   const [showLoader, setShowLoader] = useState(false);
   const [finishedLoading, setFinishedLoading] = useState(false);
@@ -150,7 +151,7 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
     // };
 
     console.log(data);
-    sendSocketMessage(`start ${JSON.stringify(data)}`);
+    send(`start ${JSON.stringify(data)}`);
   };
   form.watch();
 

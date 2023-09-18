@@ -121,6 +121,8 @@ def scrape_text_with_selenium(url: str) -> tuple[WebDriver, str]:
     options.add_argument(f"user-agent={CFG.user_agent}")
     options.add_argument('--headless')
     options.add_argument("--enable-javascript")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
 
     time.sleep(5)
 

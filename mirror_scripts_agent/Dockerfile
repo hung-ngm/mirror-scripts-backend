@@ -2,7 +2,8 @@ FROM python:3.11.4-slim-bullseye as install-browser
 
 RUN apt-get update \
     && apt-get satisfy -y \
-    chromium chromium-driver \
+    chromium=116.0.5845.180 \
+    chromium-driver=116.0.5845.180 \
     && chromium --version && chromedriver --version
 
 FROM install-browser as mirror-scripts-install

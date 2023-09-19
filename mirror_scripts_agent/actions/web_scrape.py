@@ -22,6 +22,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from fastapi import WebSocket
 import chromedriver_autoinstaller
+import traceback
 
 import processing.text as summary
 
@@ -66,6 +67,7 @@ async def async_browse(url: str, question: str, websocket: WebSocket) -> str:
         return f"Information gathered from url {url}: {summary_text}"
     except Exception as e:
         print(f"An error occurred while processing the url {url}: {e}")
+        print(traceback.format_exc())
         return f"Error processing the url {url}: {e}"
 
 

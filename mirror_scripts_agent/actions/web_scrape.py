@@ -21,7 +21,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import WebDriverException
 from fastapi import WebSocket
-import chromedriver_autoinstaller
+# import chromedriver_autoinstaller
 import traceback
 
 import processing.text as summary
@@ -35,7 +35,7 @@ executor = ThreadPoolExecutor()
 
 FILE_DIR = Path(__file__).parent.parent
 CFG = Config()
-chromedriver_autoinstaller.install() #Installs the latest compat version of chromedriver
+# chromedriver_autoinstaller.install() #Installs the latest compat version of chromedriver
 
 
 async def async_browse(url: str, question: str, websocket: WebSocket) -> str:
@@ -145,7 +145,8 @@ def scrape_text_with_selenium(url: str) -> tuple[WebDriver, str]:
         options.add_experimental_option(
             "prefs", {"download_restrictions": 3}
         )
-        driver = webdriver.Chrome(options=options)
+        service = Service()
+        driver = webdriver.Chrome(service=service, options=options)
     
     MAX_RETRIES = 3
     for attempt in range(MAX_RETRIES):

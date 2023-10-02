@@ -17,7 +17,9 @@ from config import Config
 from agent import prompts
 import os
 import string
+from actions.tavily_search import tavily_client
 
+import processing.text as summary
 
 CFG = Config()
 
@@ -100,17 +102,15 @@ class ResearchAgent:
         Args: query (str): The query to run the async search for
         Returns: list[str]: The async search for the given query
         """
-        search_results = json.loads(web_search(query))
-        new_search_urls = self.get_new_urls([url.get("href") for url in search_results])
+        print(f"Running async_search on query: {query}")
+        
+        search_results = tavily_client.search(query, search_depth="advanced")
 
-        await self.websocket.send_json(
-            {"type": "logs", "output": f"🌐 Browsing the following sites for relevant information: {new_search_urls}..."})
+        print(f"Search results using tavily client: {search_results}")
 
-        # Create a list to hold the coroutine objects
-        tasks = [async_browse(url, query, self.websocket) for url in await new_search_urls]
+        responses = [f"Information gathered from url {result['url']}: {summary.summarize_text(result['content'], query)}" for result in search_results['results']]
 
-        # Gather the results as they become available
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        print(f"Response from tavily client: {responses}")
 
         return responses
 

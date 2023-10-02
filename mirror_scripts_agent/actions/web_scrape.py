@@ -27,6 +27,8 @@ from processing.html import extract_hyperlinks, format_hyperlinks
 
 from concurrent.futures import ThreadPoolExecutor
 
+from actions.tavily_search import tavily_client
+
 executor = ThreadPoolExecutor()
 
 FILE_DIR = Path(__file__).parent.parent
@@ -56,10 +58,12 @@ async def async_browse(url: str, question: str, websocket: WebSocket) -> str:
         await loop.run_in_executor(executor, add_header, driver)
         summary_text = await loop.run_in_executor(executor, summary.summarize_text, url, text, question, driver)
 
+
         await websocket.send_json(
             {"type": "logs", "output": f"📝 Information gathered from url {url}: {summary_text}"})
 
         return f"Information gathered from url {url}: {summary_text}"
+
     except Exception as e:
         print(f"An error occurred while processing the url {url}: {e}")
         return f"Error processing the url {url}: {e}"

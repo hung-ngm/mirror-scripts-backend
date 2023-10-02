@@ -104,7 +104,7 @@ class ResearchAgent:
         """
         print(f"Running async_search on query: {query}")
         
-        search_results = tavily_client.search(query, search_depth="advanced")
+        search_results = tavily_client.search(query, search_depth="advanced", max_results=5)
 
         print(f"Search results using tavily client: {search_results}")
 

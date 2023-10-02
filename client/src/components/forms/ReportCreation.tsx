@@ -117,39 +117,6 @@ const ReportCreation = ({ topic: topicParam }: Props) => {
 
   const onSubmit = async (data: Input) => {
     setShowLoader(true);
-    // getQuestions(data, {
-    //   onError: (error) => {
-    //     setShowLoader(false);
-    //     if (error instanceof AxiosError) {
-    //       if (error.response?.status === 500) {
-    //         toast({
-    //           title: "Error",
-    //           description: "Something went wrong. Please try again later.",
-    //           variant: "destructive",
-    //         });
-    //       }
-    //     }
-    //   },
-    //   onSuccess: ({ gameId }: { gameId: string }) => {
-    //     setFinishedLoading(true);
-    //     // setTimeout(() => {
-    //     //   if (form.getValues("type") === "mcq") {
-    //     //     router.push(`/play/mcq/${gameId}`);
-    //     //   } else if (form.getValues("type") === "open_ended") {
-    //     //     router.push(`/play/open-ended/${gameId}`);
-    //     //   }
-    //     // }, 2000);
-    //   },
-    // });
-
-    // });
-    // if (finishedLoading) {
-    //   router.push({
-    //     pathname: '/result',
-    //     query: { dataOutput },
-    //   });
-    // };
-
     console.log(data);
     send(`start ${JSON.stringify(data)}`);
   };

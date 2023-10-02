@@ -29,7 +29,6 @@ def generate_report_prompt(question, research_summary):
             "You MUST determine your own concrete and valid opinion based on the given information. Do NOT deter to general and meaningless conclusions." \
            "Write all used source urls at the end of the report in apa format"
 
-
 def generate_search_queries_prompt(question):
     """ Generates the search queries prompt for the given question.
     Args: question (str): The question to generate the search queries prompt for
@@ -99,7 +98,6 @@ def generate_lesson_prompt(concept):
 
     return prompt
 
-
 def get_report_by_type(report_type):
     report_type_mapping = {
         'research_report': generate_report_prompt,
@@ -107,7 +105,6 @@ def get_report_by_type(report_type):
         'outline_report': generate_outline_report_prompt
     }
     return report_type_mapping[report_type]
-
 
 def auto_agent_instructions():
     return """

@@ -1,3 +1,6 @@
+# Description: Research assistant class that handles the research process for a given question.
+
+# libraries
 import asyncio
 import json
 import uuid
@@ -21,6 +24,11 @@ CFG = Config()
 
 class ResearchAgent:
     def __init__(self, question, agent, agent_role_prompt, websocket):
+        """ Initializes the research assistant with the given question.
+        Args: question (str): The question to research
+        Returns: None
+        """
+
         self.question = question
         self.agent = agent
         self.agent_role_prompt = agent_role_prompt if agent_role_prompt else prompts.generate_agent_role_prompt(agent)
@@ -30,24 +38,21 @@ class ResearchAgent:
         self.dir_path = os.path.dirname(f"./outputs/{self.directory_name}/")
         self.websocket = websocket
 
-    
+
     async def summarize(self, text, topic):
-        """
-        Summarize the given text for the given topic
-        Args:
-            text (str): The text to summarize
-            topic (str): The topic to summarize the text for
+        """ Summarizes the given text for the given topic.
+        Args: text (str): The text to summarize
+                topic (str): The topic to summarize the text for
         Returns: str: The summarized text
         """
-        
+
         messages = [create_message(text, topic)]
         await self.websocket.send_json({"type": "logs", "output": f"📝 Summarizing text for query: {text}"})
 
         return create_chat_completion(
-            modle=CFG.fast_llm_model,
-            messages=messages
+            model=CFG.fast_llm_model,
+            messages=messages,
         )
-    
 
     async def get_new_urls(self, url_set_input):
         """ Gets the new urls from the given url set.
@@ -63,7 +68,6 @@ class ResearchAgent:
                 new_urls.append(url)
 
         return new_urls
-    
 
     async def call_agent(self, action, stream=False, websocket=None):
         messages = [{
@@ -81,7 +85,6 @@ class ResearchAgent:
         )
         return answer
 
-
     async def create_search_queries(self):
         """ Creates the search queries for the given question.
         Args: None
@@ -91,7 +94,6 @@ class ResearchAgent:
         print(result)
         await self.websocket.send_json({"type": "logs", "output": f"🧠 I will conduct my research based on the following queries: {result}..."})
         return json.loads(result)
-    
 
     async def async_search(self, query):
         """ Runs the async search for the given query.
@@ -111,7 +113,6 @@ class ResearchAgent:
         responses = await asyncio.gather(*tasks, return_exceptions=True)
 
         return responses
-    
 
     async def run_search_summary(self, query):
         """ Runs the search summary for the given query.
@@ -127,7 +128,6 @@ class ResearchAgent:
         os.makedirs(os.path.dirname(f"./outputs/{self.directory_name}/research-{query}.txt"), exist_ok=True)
         write_to_file(f"./outputs/{self.directory_name}/research-{query}.txt", result)
         return result
-    
 
     async def conduct_research(self):
         """ Conducts the research for the given question.
@@ -159,7 +159,6 @@ class ResearchAgent:
         await self.websocket.send_json({"type": "logs", "output": f"I will research based on the following concepts: {result}\n"})
         return json.loads(result)
 
-
     async def write_report(self, report_type, websocket):
         """ Writes the report for the given question.
         Args: None
@@ -174,7 +173,6 @@ class ResearchAgent:
         path = await write_md_to_pdf(report_type, self.directory_name, await answer)
 
         return answer, path
-
 
     async def write_lessons(self):
         """ Writes lessons on essential concepts of the research.

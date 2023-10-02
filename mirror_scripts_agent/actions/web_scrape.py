@@ -5,7 +5,6 @@ import logging
 import asyncio
 from pathlib import Path
 from sys import platform
-import time
 
 from bs4 import BeautifulSoup
 from webdriver_manager.chrome import ChromeDriverManager
@@ -19,10 +18,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.safari.options import Options as SafariOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.common.exceptions import WebDriverException
 from fastapi import WebSocket
-# import chromedriver_autoinstaller
-import traceback
 
 import processing.text as summary
 
@@ -35,7 +31,6 @@ executor = ThreadPoolExecutor()
 
 FILE_DIR = Path(__file__).parent.parent
 CFG = Config()
-# chromedriver_autoinstaller.install() #Installs the latest compat version of chromedriver
 
 
 async def async_browse(url: str, question: str, websocket: WebSocket) -> str:
@@ -67,7 +62,6 @@ async def async_browse(url: str, question: str, websocket: WebSocket) -> str:
         return f"Information gathered from url {url}: {summary_text}"
     except Exception as e:
         print(f"An error occurred while processing the url {url}: {e}")
-        print(traceback.format_exc())
         return f"Error processing the url {url}: {e}"
 
 
@@ -123,10 +117,6 @@ def scrape_text_with_selenium(url: str) -> tuple[WebDriver, str]:
     options.add_argument(f"user-agent={CFG.user_agent}")
     options.add_argument('--headless')
     options.add_argument("--enable-javascript")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-
-    time.sleep(5)
 
     if CFG.selenium_web_browser == "firefox":
         service = Service(executable_path=GeckoDriverManager().install())
@@ -145,19 +135,8 @@ def scrape_text_with_selenium(url: str) -> tuple[WebDriver, str]:
         options.add_experimental_option(
             "prefs", {"download_restrictions": 3}
         )
-        service = Service()
-        driver = webdriver.Chrome(service=service, options=options)
-    
-    MAX_RETRIES = 3
-    for attempt in range(MAX_RETRIES):
-        try:
-            driver.get(url)
-            break
-        except WebDriverException:
-            if attempt < MAX_RETRIES - 1:  # i.e. not the last attempt
-                time.sleep(2)  # wait for 2 seconds before trying again
-            else:
-                raise
+        driver = webdriver.Chrome(options=options)
+    driver.get(url)
 
     WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.TAG_NAME, "body"))

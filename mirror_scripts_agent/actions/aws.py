@@ -40,9 +40,5 @@ def upload_file_to_s3(file_name: str, key: str) -> str:
 
         return url
 
-    except FileNotFoundError:
-        print("The file was not found")
-        return f"Error: File Not Found"
-    except NoCredentialsError:
-        print("Credentials not available")
-        return f"Error: No Credentials"
+    except Exception as e:
+        return f"Error: {e}"

@@ -30,6 +30,9 @@ class Config(metaclass=Singleton):
 
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.tavily_api_key = os.getenv("TAVILY_API_KEY")
+        self.aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+        self.aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+        self.aws_s3_bucket_name = os.getenv("AWS_S3_BUCKET_NAME")
         self.temperature = float(os.getenv("TEMPERATURE", "1"))
 
         self.user_agent = os.getenv(

@@ -13,7 +13,7 @@ s3_client = boto3.client(
 
 bucket_name = CFG.aws_s3_bucket_name
 
-def upload_file_to_s3(file_name: str, key: str) -> str:
+def upload_pdf_file_to_s3(file_name: str, key: str) -> str:
     """
     Upload file to Amazon S3
 
@@ -31,6 +31,36 @@ def upload_file_to_s3(file_name: str, key: str) -> str:
             Key=key,
             ExtraArgs={
                 'ContentType': 'application/pdf',
+                'ACL': 'public-read',
+                'ContentDisposition': 'inline'
+            }
+        )
+
+        url = f"https://{bucket_name}.s3.amazonaws.com/{key}"
+
+        return url
+
+    except Exception as e:
+        return f"Error: {e}"
+    
+def upload_md_file_to_s3(file_name: str, key: str) -> str:
+    """
+    Upload markdown file to Amazon S3
+
+    Args:
+        file_name (str): the name of the file to upload
+        key (str): the name of the file path to upload
+
+    Returns:
+        url (str): The URL of the uploaded file
+    """
+    try:
+        s3_client.upload_file(
+            Filename=file_name,
+            Bucket=bucket_name,
+            Key=key,
+            ExtraArgs={
+                'ContentType': 'text/markdown',
                 'ACL': 'public-read',
                 'ContentDisposition': 'inline'
             }

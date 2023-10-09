@@ -9,7 +9,7 @@ from config import Config
 from agent.llm_utils import create_chat_completion
 import os
 from md2pdf.core import md2pdf
-from actions.aws import upload_file_to_s3
+from actions.aws import upload_pdf_file_to_s3, upload_md_file_to_s3
 
 CFG = Config()
 
@@ -136,8 +136,8 @@ async def write_md_to_pdf(task: str, directory_name: str, text: str) -> None:
     md_to_pdf(f"{file_path}.md", f"{file_path}.pdf")
     print(f"{task} written to {file_path}.pdf")
 
-    upload_file_to_s3(file_name=f"{file_path}.md", key=f"{directory_name}/{task}.md")
-    s3_file_path = upload_file_to_s3(file_name=f"{file_path}.pdf", key=f"{directory_name}/{task}.pdf")
+    upload_md_file_to_s3(file_name=f"{file_path}.md", key=f"{directory_name}/{task}.md")
+    s3_file_path = upload_pdf_file_to_s3(file_name=f"{file_path}.pdf", key=f"{directory_name}/{task}.pdf")
 
     return s3_file_path
 

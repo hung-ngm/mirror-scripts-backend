@@ -110,7 +110,7 @@ class ResearchAgent:
         
         search_results = tavily_client.search(query, search_depth="advanced", max_results=5)
 
-        new_search_urls = self.get_new_urls([result['url']] for result in search_results['results'])
+        new_search_urls = await self.get_new_urls([result['url']] for result in search_results['results'])
 
         await self.stream_output(f"🌐 Browsing the following sites for relevant information: {new_search_urls}...")
 

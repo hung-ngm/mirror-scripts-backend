@@ -136,7 +136,7 @@ async def write_md_to_pdf(task: str, directory_name: str, text: str) -> None:
     md_to_pdf(f"{file_path}.md", f"{file_path}.pdf")
     print(f"{task} written to {file_path}.pdf")
 
-    upload_file_to_s3(file_name=f"{file_path}.pdf", key=f"{directory_name}/{task}.md")
+    upload_file_to_s3(file_name=f"{file_path}.md", key=f"{directory_name}/{task}.md")
     s3_file_path = upload_file_to_s3(file_name=f"{file_path}.pdf", key=f"{directory_name}/{task}.pdf")
 
     return s3_file_path

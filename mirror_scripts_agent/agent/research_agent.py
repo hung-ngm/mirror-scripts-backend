@@ -6,7 +6,7 @@ import json
 import uuid
 
 from actions.web_search import web_search
-from actions.web_scrape import async_browse
+from actions.web_scrape import async_gather
 from processing.text import \
     write_to_file, \
     create_message, \
@@ -19,7 +19,6 @@ import os
 import string
 from actions.tavily_search import tavily_client
 
-import processing.text as summary
 
 CFG = Config()
 
@@ -40,6 +39,10 @@ class ResearchAgent:
         self.dir_path = os.path.dirname(f"./outputs/{self.directory_name}/")
         self.websocket = websocket
 
+    async def stream_output(self, output):
+        if not self.websocket:
+            return print(output)
+        await self.websocket.send_json({"type": "logs", "output": output})
 
     async def summarize(self, text, topic):
         """ Summarizes the given text for the given topic.
@@ -57,8 +60,8 @@ class ResearchAgent:
         )
 
     async def get_new_urls(self, url_set_input):
-        """ Gets the new urls from the given url set.
-        Args: url_set_input (set[str]): The url set to get the new urls from
+        """ Gets the new urls from the given url list.
+        Args: url_set_input (list[str]): The url list to get the new urls from
         Returns: list[str]: The new urls from the given url set
         """
 
@@ -97,6 +100,7 @@ class ResearchAgent:
         await self.websocket.send_json({"type": "logs", "output": f"🧠 I will conduct my research based on the following queries: {result}..."})
         return json.loads(result)
 
+
     async def async_search(self, query):
         """ Runs the async search for the given query.
         Args: query (str): The query to run the async search for
@@ -106,11 +110,15 @@ class ResearchAgent:
         
         search_results = tavily_client.search(query, search_depth="advanced", max_results=5)
 
-        print(f"Search results using tavily client: {search_results}")
+        new_search_urls = self.get_new_urls([result['url']] for result in search_results['results'])
 
-        responses = [f"Information gathered from url {result['url']}: {summary.summarize_text(result['content'], query)}" for result in search_results['results']]
+        await self.stream_output(f"🌐 Browsing the following sites for relevant information: {new_search_urls}...")
 
-        print(f"Response from tavily client: {responses}")
+        # responses = [f"Information gathered from url {result['url']}: {summary.summarize_text(result['content'], query)}" for result in search_results['results']]
+
+        tasks = [async_gather(result['url'], query, result['content'], self.websocket) for result in search_results['results']]
+
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
 
         return responses
 

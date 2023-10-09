@@ -34,6 +34,36 @@ executor = ThreadPoolExecutor()
 FILE_DIR = Path(__file__).parent.parent
 CFG = Config()
 
+async def async_gather(url: str, question: str, content: str, websocket: WebSocket) -> str:
+    """Gather the information from a website url and return the answer to the user
+
+    Args:
+        url (str): The url of the website to browse
+        question (str): The question asked by the user
+        content: (str): The contnet of the website scraped
+        websocket (WebSocketManager): The websocket manager
+
+    Returns:
+        str: The answer and links to the user
+    """
+    loop = asyncio.get_event_loop()
+    executor = ThreadPoolExecutor(max_workers=8)
+
+    print(f"Scraping url {url} with question {question}")
+    await websocket.send_json(
+        {"type": "logs", "output": f"🔎 Browsing the {url} for relevant about: {question}..."})
+
+    try:
+        summary_text = await loop.run_in_executor(executor, summary.summarize_text, content, question)
+
+        await websocket.send_json(
+            {"type": "logs", "output": f"📝 Information gathered from url {url}: {summary_text}"})
+
+        return f"Information gathered from url {url}: {summary_text}"
+
+    except Exception as e:
+        print(f"An error occurred while processing the url {url}: {e}")
+        return f"Error processing the url {url}: {e}"
 
 async def async_browse(url: str, question: str, websocket: WebSocket) -> str:
     """Browse a website and return the answer and links to the user

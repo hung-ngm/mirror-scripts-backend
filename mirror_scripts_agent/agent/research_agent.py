@@ -5,6 +5,7 @@ import asyncio
 import json
 import uuid
 
+from actions.local_source_parse import local_source_parse, async_gather_local
 from actions.web_search import web_search
 from actions.web_scrape import async_gather
 from processing.text import \
@@ -109,16 +110,21 @@ class ResearchAgent:
         print(f"Running async_search on query: {query}")
         
         search_results = tavily_client.search(query, search_depth="advanced", max_results=5)
-            
         urls = [result['url'] for result in search_results['results']]
 
-        new_search_urls = self.get_new_urls(urls)
+        # new_search_urls = self.get_new_urls(urls)
 
         await self.stream_output(f"🌐 Browsing the following sites for relevant information: {urls}...")
 
         # responses = [f"Information gathered from url {result['url']}: {summary.summarize_text(result['content'], query)}" for result in search_results['results']]
 
         tasks = [async_gather(result['url'], query, result['content'], self.websocket) for result in search_results['results']]
+        
+        # adding local files to the tasks
+        local_sources = local_source_parse()
+        if local_sources: 
+            local_tasks = [async_gather_local(file['file_name'], query, file['content'], self.websocket) for file in local_sources]
+            tasks.extend(local_tasks)
 
         responses = await asyncio.gather(*tasks, return_exceptions=True)
 

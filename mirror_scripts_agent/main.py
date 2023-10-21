@@ -1,6 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi import UploadFile
 from pydantic import BaseModel
 import json
 import os
@@ -28,6 +29,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Upload local resources to the server
+@app.post("/upload")
+def upload_event(file: UploadFile = None):
+    if not os.path.isdir("resources"):
+        os.makedirs("resources")
+    with open(f"resources/{file.filename}", "wb+") as f:
+        f.write(file.file.read())
+    return {"status": "ok", "message": f"Uploaded {file.filename} to the server."}
+
 # app.mount("/site", StaticFiles(directory="client"), name="site")
 # app.mount("/static", StaticFiles(directory="client/static"), name="static")
 # Dynamic directory for outputs once first research is run
@@ -36,6 +46,10 @@ def startup_event():
     if not os.path.isdir("outputs"):
         os.makedirs("outputs")
     app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
+
+    if not os.path.isdir("resources"):
+        os.makedirs("resources")
+    app.mount("/resources", StaticFiles(directory="resources"), name="resources")
 
 # templates = Jinja2Templates(directory="client")
 

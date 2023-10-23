@@ -29,14 +29,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Upload local resources to the server
+# Upload multiple local resources to the server
 @app.post("/upload")
-def upload_event(file: UploadFile = None):
+async def create_upload_files(files: list[UploadFile]):
     if not os.path.isdir("resources"):
         os.makedirs("resources")
-    with open(f"resources/{file.filename}", "wb+") as f:
-        f.write(file.file.read())
-    return {"status": "ok", "message": f"Uploaded {file.filename} to the server."}
+    for file in files:
+        with open(f"resources/{file.filename}", "wb+") as f:
+            f.write(file.file.read())
+    return {"status": "ok", "message": f"Uploaded {len(files)} files to the server."}
 
 # app.mount("/site", StaticFiles(directory="client"), name="site")
 # app.mount("/static", StaticFiles(directory="client/static"), name="static")

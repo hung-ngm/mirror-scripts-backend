@@ -19,3 +19,4 @@ markdown
 langchain==0.0.275
 tavily-python
 boto3
+pymupdf

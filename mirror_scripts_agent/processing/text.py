@@ -127,7 +127,7 @@ def write_to_file(filename: str, text: str) -> None:
         text (str): The text to write
         filename (str): The filename to write to
     """
-    with open(filename, "w") as file:
+    with open(filename, "w", encoding='utf-8') as file:
         file.write(text)
 
 async def write_md_to_pdf(task: str, directory_name: str, text: str) -> None:

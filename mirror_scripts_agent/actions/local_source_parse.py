@@ -4,6 +4,7 @@ import os
 import asyncio
 from pathlib import Path
 from fastapi import WebSocket
+from typing import List
 
 import processing.text as summary
 
@@ -14,9 +15,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from actions.tavily_search import tavily_client
 
-executor = ThreadPoolExecutor()
 
-def local_source_parse(folder: str = './resources'):
+def local_source_parse(folder: str = './resources', file_list: List[str] = []):
     """Parse the local resources and return the content of the pdf files
 
     Returns:
@@ -25,25 +25,25 @@ def local_source_parse(folder: str = './resources'):
     """
     
     # if no file exits, return None
-    if not os.path.isdir(folder):
+    if not os.path.isdir(folder) or len(file_list) == 0:
         return None
     
-    else:
-        output = []
-        for file in os.listdir(folder):
-            path = os.path.join(folder, file)
-            # if the file is pdf
-            if os.path.isfile(path) and path.endswith('.pdf'):
-                # get file name
-                file_name = file.split('.')[0]
-                print(path)
-                loader = PyMuPDFLoader(path)
-                data = loader.load()
-                # concatentate all the page_content into one string
-                text = '\n'.join([page.page_content for page in data])
-                output.append({'file_name': file_name, 'content': text})
+    output = []
+    for file in file_list:
+        path = os.path.join(folder, file)
+        # if the file is pdf
+        if os.path.isfile(path) and path.endswith('.pdf'):
+            # get file name
+            file_name = file.split('.')[0].split('_')[1]
+            print(path)
+            loader = PyMuPDFLoader(path)
+            data = loader.load()
+            # concatentate all the page_content into one string
+            text = '\n'.join([page.page_content for page in data])
+            output.append({'file_name': file_name, 'content': text})
+            os.remove(path)
 
-        return output
+    return output
 
 async def async_gather_local(file_name: str, question: str, content: str, websocket: WebSocket) -> str:
     """Gather the information from a website url and return the answer to the user

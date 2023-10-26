@@ -111,9 +111,11 @@ def choose_agent(task: str) -> str:
             model=CFG.smart_llm_model,
             messages=[
                 {"role": "system", "content": f"{auto_agent_instructions()}"},
-                {"role": "user", "content": f"task: {task}"}],
+                {"role": "user", "content": f"task: {task}\nresponse:"}],
             temperature=0,
         )
+
+        print("Agent selection prompt:", response)
 
         return json.loads(response)
     except Exception as e:

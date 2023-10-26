@@ -9,7 +9,7 @@ import asyncio
 import traceback
 
 from agent.llm_utils import choose_agent
-from agent.run import WebSocketManager
+from agent.run import WebSocketManager, FilesCacheManager
 
 
 class ResearchRequest(BaseModel):
@@ -29,16 +29,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Upload multiple local resources to the server
-@app.post("/upload")
-async def create_upload_files(files: list[UploadFile]):
-    if not os.path.isdir("resources"):
-        os.makedirs("resources")
-    for file in files:
-        with open(f"resources/{file.filename}", "wb+") as f:
-            f.write(file.file.read())
-    return {"status": "ok", "message": f"Uploaded {len(files)} files to the server."}
-
 # app.mount("/site", StaticFiles(directory="client"), name="site")
 # app.mount("/static", StaticFiles(directory="client/static"), name="static")
 # Dynamic directory for outputs once first research is run
@@ -55,6 +45,25 @@ def startup_event():
 # templates = Jinja2Templates(directory="client")
 
 manager = WebSocketManager()
+filesCacheManager = FilesCacheManager()
+
+# Upload multiple local resources to the server
+@app.post("/upload/{file_uid}")
+async def create_upload_files(
+    file_uid: str,
+    files: list[UploadFile]
+):
+    if not os.path.isdir("resources"):
+        os.makedirs("resources")
+    file_list = []
+    for file in files:
+        new_file_name = f"{file_uid}_{file.filename}"
+        file_list.append(new_file_name)
+
+        with open(f"resources/{new_file_name}", "wb+") as f:
+            f.write(file.file.read())
+    await filesCacheManager.add_files(file_uid, file_list)
+    return {"status": "ok", "message": f"Uploaded {len(files)} files to the server."}
 
 
 # @app.get("/")
@@ -71,6 +80,25 @@ async def handle_start_command(data: str, websocket: WebSocket):
     task = json_data.get("task")
     report_type = json_data.get("report_type")
     agent = json_data.get("agent")
+    fileUID = json_data.get("fileUID")
+    print()
+    print(json_data)
+    print("task:", task)
+    print("report:", report_type)
+    print("agent:", agent)
+    print("fileUID:", fileUID)
+    print()
+
+    if fileUID == "default":
+        file_list = []
+    else:
+        file_list = await filesCacheManager.get_files(fileUID)
+        if len(file_list) == 0:
+            await websocket.send_json({"type": "logs", "output": "Load files failed!"})
+        # else:
+        #     await websocket.send_json({"type": "logs", "output": f"{len(file_list)} files loaded!"})
+        await filesCacheManager.del_files(fileUID)
+
     # temporary so "normal agents" can still be used and not just auto generated, will be removed when we move to auto generated
     if agent == "Auto Agent":
         agent_dict = choose_agent(task)
@@ -82,7 +110,7 @@ async def handle_start_command(data: str, websocket: WebSocket):
     await websocket.send_json({"type": "logs", "output": f"Initiated an Agent: {agent}"})
 
     if task and report_type and agent:
-        asyncio.create_task(manager.start_streaming(task, report_type, agent, agent_role_prompt, websocket))
+        asyncio.create_task(manager.start_streaming(task, report_type, agent, agent_role_prompt, file_list, websocket))
     else:
         print("Error: not enough parameters provided.")
 

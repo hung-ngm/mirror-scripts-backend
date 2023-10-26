@@ -25,7 +25,7 @@ CFG = Config()
 
 
 class ResearchAgent:
-    def __init__(self, question, agent, agent_role_prompt, websocket):
+    def __init__(self, question, agent, agent_role_prompt, websocket, file_list = []):
         """ Initializes the research assistant with the given question.
         Args: question (str): The question to research
         Returns: None
@@ -38,6 +38,8 @@ class ResearchAgent:
         self.research_summary = ""
         self.directory_name = uuid.uuid4()
         self.dir_path = os.path.dirname(f"./outputs/{self.directory_name}/")
+        self.file_list = file_list
+        self.local_content = local_source_parse(file_list=self.file_list)
         self.websocket = websocket
 
     async def stream_output(self, output):
@@ -109,7 +111,7 @@ class ResearchAgent:
         """
         print(f"Running async_search on query: {query}")
         
-        search_results = tavily_client.search(query, search_depth="advanced", max_results=5)
+        search_results = tavily_client.search(query, search_depth="advanced", include_raw_content=True,  max_results=5)
         urls = [result['url'] for result in search_results['results']]
 
         # new_search_urls = self.get_new_urls(urls)
@@ -118,10 +120,10 @@ class ResearchAgent:
 
         # responses = [f"Information gathered from url {result['url']}: {summary.summarize_text(result['content'], query)}" for result in search_results['results']]
 
-        tasks = [async_gather(result['url'], query, result['content'], self.websocket) for result in search_results['results']]
+        tasks = [async_gather(result['url'], query, result['raw_content'], self.websocket) for result in search_results['results']]
         
         # adding local files to the tasks
-        local_sources = local_source_parse()
+        local_sources = self.local_content
         if local_sources: 
             local_tasks = [async_gather_local(file['file_name'], query, file['content'], self.websocket) for file in local_sources]
             tasks.extend(local_tasks)

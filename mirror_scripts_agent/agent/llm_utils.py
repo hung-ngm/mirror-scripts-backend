@@ -60,7 +60,7 @@ def create_chat_completion(
 
 def send_chat_completion_request(
     messages, model, temperature, max_tokens, stream, websocket
-):
+) -> str:
     if not stream:
         result = lc_openai.ChatCompletion.create(
             model=model, # Change model here to use different models
@@ -71,10 +71,10 @@ def send_chat_completion_request(
         )
         return result["choices"][0]["message"]["content"]
     else:
-        return stream_response(model, messages, temperature, max_tokens, websocket)
+        return stream_response(model, messages, temperature, max_tokens, websocket) #type: ignore
 
 
-async def stream_response(model, messages, temperature, max_tokens, websocket):
+async def stream_response(model, messages, temperature, max_tokens, websocket) -> str:
     paragraph = ""
     response = ""
     print(f"streaming response...")
@@ -98,7 +98,7 @@ async def stream_response(model, messages, temperature, max_tokens, websocket):
     return response
 
 
-def choose_agent(task: str) -> str:
+def choose_agent(task: str) -> dict:
     """Determines what agent should be used
     Args:
         task (str): The research question the user asked

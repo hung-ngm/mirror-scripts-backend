@@ -19,7 +19,7 @@ from agent import prompts
 import os
 import string
 from actions.tavily_search import tavily_client
-
+import time
 
 CFG = Config()
 
@@ -36,7 +36,7 @@ class ResearchAgent:
         self.agent_role_prompt = agent_role_prompt if agent_role_prompt else prompts.generate_agent_role_prompt(agent)
         self.visited_urls = set()
         self.research_summary = ""
-        self.directory_name = uuid.uuid4()
+        self.directory_name = str(uuid.uuid4())
         self.dir_path = os.path.dirname(f"./outputs/{self.directory_name}/")
         self.file_list = file_list
         self.local_content = local_source_parse(file_list=self.file_list)
@@ -57,7 +57,7 @@ class ResearchAgent:
         messages = [create_message(text, topic)]
         await self.websocket.send_json({"type": "logs", "output": f"📝 Summarizing text for query: {text}"})
 
-        return create_chat_completion(
+        return await create_chat_completion(
             model=CFG.fast_llm_model,
             messages=messages,
         )
@@ -78,6 +78,7 @@ class ResearchAgent:
         return new_urls
 
     async def call_agent(self, action, stream=False, websocket=None):
+        t1 = time.time()
         messages = [{
             "role": "system",
             "content": self.agent_role_prompt
@@ -85,12 +86,13 @@ class ResearchAgent:
             "role": "user",
             "content": action,
         }]
-        answer = create_chat_completion(
+        answer = await create_chat_completion(
             model=CFG.smart_llm_model,
             messages=messages,
             stream=stream,
             websocket=websocket,
         )
+        print('call_agent:', time.time() - t1)
         return answer
 
     async def create_search_queries(self):
@@ -100,27 +102,29 @@ class ResearchAgent:
         """
         result = await self.call_agent(prompts.generate_search_queries_prompt(self.question))
         print(result)
-        await self.websocket.send_json({"type": "logs", "output": f"🧠 I will conduct my research based on the following queries: {result}..."})
-        return json.loads(result)
+        loaded_results = json.loads(result)
+        await self.websocket.send_json({"type": "logs", "output": f"🧠 I will conduct my research based on the following queries: {', '.join(loaded_results)}..."})
+        return loaded_results
 
 
-    async def async_search(self, query):
+    async def async_search(self, query): 
         """ Runs the async search for the given query.
         Args: query (str): The query to run the async search for
         Returns: list[str]: The async search for the given query
         """
         print(f"Running async_search on query: {query}")
-        
+        t1 = time.time()
         search_results = tavily_client.search(query, search_depth="advanced", include_raw_content=True,  max_results=5)
-        urls = [result['url'] for result in search_results['results']]
+        print("Tavily search:", time.time() - t1)
+        urls = [result['url'] for result in search_results['results']] #type: ignore
 
         # new_search_urls = self.get_new_urls(urls)
 
-        await self.stream_output(f"🌐 Browsing the following sites for relevant information: {urls}...")
+        await self.stream_output(f"🌐 Browsing the following sites for relevant information: {', '.join(urls)}...")
 
         # responses = [f"Information gathered from url {result['url']}: {summary.summarize_text(result['content'], query)}" for result in search_results['results']]
 
-        tasks = [async_gather(result['url'], query, result['raw_content'], self.websocket) for result in search_results['results']]
+        tasks = [async_gather(result['url'], query, result['raw_content'], self.websocket) for result in search_results['results']] #type: ignore
         
         # adding local files to the tasks
         local_sources = self.local_content
@@ -142,7 +146,7 @@ class ResearchAgent:
 
         responses = await self.async_search(query)
 
-        result = "\n".join(responses)
+        result = "\n".join(responses) #type: ignore
         os.makedirs(os.path.dirname(f"./outputs/{self.directory_name}/research-{query}.txt"), exist_ok=True)
         write_to_file(f"./outputs/{self.directory_name}/research-{query}.txt", result)
         return result
@@ -172,10 +176,10 @@ class ResearchAgent:
         Args: None
         Returns: list[str]: The concepts for the given question
         """
-        result = self.call_agent(prompts.generate_concepts_prompt(self.question, self.research_summary))
+        result = await self.call_agent(prompts.generate_concepts_prompt(self.question, self.research_summary))
 
         await self.websocket.send_json({"type": "logs", "output": f"I will research based on the following concepts: {result}\n"})
-        return json.loads(result)
+        return json.loads(result) #type: ignore
 
     async def write_report(self, report_type, websocket):
         """ Writes the report for the given question.
@@ -188,7 +192,7 @@ class ResearchAgent:
         answer = await self.call_agent(report_type_func(self.question, self.research_summary), stream=True,
                                        websocket=websocket)
 
-        path = await write_md_to_pdf(report_type, self.directory_name, await answer)
+        path = await write_md_to_pdf(report_type, self.directory_name, answer) #type: ignore
 
         return answer, path
 
@@ -200,4 +204,4 @@ class ResearchAgent:
         concepts = await self.create_concepts()
         for concept in concepts:
             answer = await self.call_agent(prompts.generate_lesson_prompt(concept), stream=True)
-            write_md_to_pdf("Lesson", self.directory_name, answer)
+            await write_md_to_pdf("Lesson", self.directory_name, answer)

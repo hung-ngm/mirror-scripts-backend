@@ -101,7 +101,7 @@ async def handle_start_command(data: str, websocket: WebSocket):
 
     # temporary so "normal agents" can still be used and not just auto generated, will be removed when we move to auto generated
     if agent == "Auto Agent":
-        agent_dict = choose_agent(task)
+        agent_dict = await choose_agent(task)
         agent = agent_dict.get("agent")
         agent_role_prompt = agent_dict.get("agent_role_prompt")
     else:

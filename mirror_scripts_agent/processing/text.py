@@ -44,7 +44,7 @@ def split_text(text: str, max_length: int = 8192) -> Generator[str, None, None]:
         yield "\n".join(current_chunk)
 
 
-def summarize_text(
+async def summarize_text(
     text: str, question: str
 ) -> str:
     """Summarize text using the OpenAI API
@@ -69,7 +69,7 @@ def summarize_text(
 
         messages = [create_message(chunk, question)]
 
-        summary = create_chat_completion(
+        summary = await create_chat_completion(
             model=CFG.fast_llm_model,
             messages=messages,
         )
@@ -82,7 +82,7 @@ def summarize_text(
     combined_summary = "\n".join(summaries)
     messages = [create_message(combined_summary, question)]
 
-    return create_chat_completion(
+    return await create_chat_completion(
         model=CFG.fast_llm_model,
         messages=messages,
     )

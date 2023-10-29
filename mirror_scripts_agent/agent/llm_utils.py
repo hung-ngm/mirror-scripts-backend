@@ -58,11 +58,11 @@ def create_chat_completion(
     raise RuntimeError("Failed to get response from OpenAI API")
 
 
-def send_chat_completion_request(
+async def send_chat_completion_request(
     messages, model, temperature, max_tokens, stream, websocket
-):
+) -> str:
     if not stream:
-        result = lc_openai.ChatCompletion.create(
+        result = await lc_openai.ChatCompletion.acreate(
             model=model, # Change model here to use different models
             messages=messages,
             temperature=temperature,
@@ -71,15 +71,14 @@ def send_chat_completion_request(
         )
         return result["choices"][0]["message"]["content"]
     else:
-        return stream_response(model, messages, temperature, max_tokens, websocket)
+        return await stream_response(model, messages, temperature, max_tokens, websocket) #type: ignore
 
 
-async def stream_response(model, messages, temperature, max_tokens, websocket):
-    paragraph = ""
+async def stream_response(model, messages, temperature, max_tokens, websocket) -> str:
     response = ""
     print(f"streaming response...")
 
-    for chunk in lc_openai.ChatCompletion.create(
+    async for chunk in await lc_openai.ChatCompletion.acreate(
             model=model,
             messages=messages,
             temperature=temperature,
@@ -90,15 +89,12 @@ async def stream_response(model, messages, temperature, max_tokens, websocket):
         content = chunk["choices"][0].get("delta", {}).get("content")
         if content is not None:
             response += content
-            paragraph += content
-            if "\n" in paragraph:
-                await websocket.send_json({"type": "report", "output": paragraph})
-                paragraph = ""
+            await websocket.send_json({"type": "report", "output": content})
     print(f"streaming response complete")
     return response
 
 
-def choose_agent(task: str) -> str:
+async def choose_agent(task: str) -> dict:
     """Determines what agent should be used
     Args:
         task (str): The research question the user asked
@@ -107,7 +103,7 @@ def choose_agent(task: str) -> str:
         agent_role_prompt (str): The prompt for the agent
     """
     try:
-        response = create_chat_completion(
+        response = await create_chat_completion(
             model=CFG.smart_llm_model,
             messages=[
                 {"role": "system", "content": f"{auto_agent_instructions()}"},

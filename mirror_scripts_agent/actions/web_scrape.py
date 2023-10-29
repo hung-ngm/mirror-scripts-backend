@@ -28,6 +28,7 @@ from processing.html import extract_hyperlinks, format_hyperlinks
 from concurrent.futures import ThreadPoolExecutor
 
 from actions.tavily_search import tavily_client
+import time
 
 executor = ThreadPoolExecutor()
 
@@ -46,15 +47,18 @@ async def async_gather(url: str, question: str, content: str, websocket: WebSock
     Returns:
         str: The answer and links to the user
     """
-    loop = asyncio.get_event_loop()
-    executor = ThreadPoolExecutor(max_workers=8)
+    # loop = asyncio.get_event_loop()
+    # executor = ThreadPoolExecutor(max_workers=8)
+    t1 = time.time()
 
     print(f"Scraping url {url} with question {question}")
     await websocket.send_json(
         {"type": "logs", "output": f"🔎 Browsing the {url} for relevant about: {question}..."})
 
     try:
-        summary_text = await loop.run_in_executor(executor, summary.summarize_text, content, question)
+        summary_text = await summary.summarize_text(content, question)
+        # loop.run_in_executor(executor, summary.summarize_text, content, question)
+        print("async_gather:", time.time() - t1)
 
         await websocket.send_json(
             {"type": "logs", "output": f"📝 Information gathered from url {url}: {summary_text}"})

@@ -14,6 +14,7 @@ from processing.html import extract_hyperlinks, format_hyperlinks
 from concurrent.futures import ThreadPoolExecutor
 
 from actions.tavily_search import tavily_client
+import time
 
 
 def local_source_parse(folder: str = './resources', file_list: List[str] = []):
@@ -27,7 +28,7 @@ def local_source_parse(folder: str = './resources', file_list: List[str] = []):
     # if no file exits, return None
     if not os.path.isdir(folder) or len(file_list) == 0:
         return None
-    
+    t1 = time.time()
     output = []
     for file in file_list:
         path = os.path.join(folder, file)
@@ -42,6 +43,7 @@ def local_source_parse(folder: str = './resources', file_list: List[str] = []):
             text = '\n'.join([page.page_content for page in data])
             output.append({'file_name': file_name, 'content': text})
             os.remove(path)
+    print('local_source_parse:', time.time() - t1)
 
     return output
 
@@ -57,15 +59,18 @@ async def async_gather_local(file_name: str, question: str, content: str, websoc
     Returns:
         str: The answer and links to the user
     """
-    loop = asyncio.get_event_loop()
-    executor = ThreadPoolExecutor(max_workers=8)
+    # loop = asyncio.get_event_loop()
+    # executor = ThreadPoolExecutor(max_workers=8)
+    t1 = time.time()
 
     print(f"Analysing file {file_name} with question {question}")
     await websocket.send_json(
         {"type": "logs", "output": f"🔎 Reading file {file_name} for relevant about: {question}..."})
 
     try:
-        summary_text = await loop.run_in_executor(executor, summary.summarize_text, content, question)
+        summary_text = await summary.summarize_text(content, question)
+        # loop.run_in_executor(executor, summary.summarize_text, content, question)
+        print('async_gather_local:', time.time() - t1)
 
         await websocket.send_json(
             {"type": "logs", "output": f"📝 Information gathered from file {file_name}: {summary_text}"})

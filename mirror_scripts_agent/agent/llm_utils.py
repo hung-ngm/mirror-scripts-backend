@@ -20,7 +20,7 @@ openai.api_key = CFG.openai_api_key
 from typing import Optional
 import logging
 
-def create_chat_completion(
+async def create_chat_completion(
     messages: list,  # type: ignore
     model: Optional[str] = None,
     temperature: float = CFG.temperature,
@@ -49,7 +49,7 @@ def create_chat_completion(
 
     # create response
     for attempt in range(10):  # maximum of 10 attempts
-        response = send_chat_completion_request(
+        response = await send_chat_completion_request(
             messages, model, temperature, max_tokens, stream, websocket
         )
         return response
@@ -71,7 +71,7 @@ async def send_chat_completion_request(
         )
         return result["choices"][0]["message"]["content"]
     else:
-        return await stream_response(model, messages, temperature, max_tokens, websocket) #type: ignore
+        return await stream_response(model, messages, temperature, max_tokens, websocket) 
 
 
 async def stream_response(model, messages, temperature, max_tokens, websocket) -> str:

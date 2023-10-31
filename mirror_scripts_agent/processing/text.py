@@ -1,12 +1,9 @@
 """Text processing functions"""
-import urllib
-from typing import Dict, Generator, Optional
-import string
-
-from selenium.webdriver.remote.webdriver import WebDriver
+from typing import Dict, Generator
 
 from config import Config
 from agent.llm_utils import create_chat_completion
+from llama_index.llms import ChatMessage
 import os
 from md2pdf.core import md2pdf
 from actions.aws import upload_pdf_file_to_s3, upload_md_file_to_s3
@@ -73,6 +70,7 @@ async def summarize_text(
             model=CFG.fast_llm_model,
             messages=messages,
         )
+    
         summaries.append(summary)
         # memory_to_add = f"Source: {url}\n" f"Content summary part#{i + 1}: {summary}"
 
@@ -80,6 +78,7 @@ async def summarize_text(
 
 
     combined_summary = "\n".join(summaries)
+
     messages = [create_message(combined_summary, question)]
 
     return await create_chat_completion(
@@ -87,22 +86,22 @@ async def summarize_text(
         messages=messages,
     )
 
-def scroll_to_percentage(driver: WebDriver, ratio: float) -> None:
-    """Scroll to a percentage of the page
+# def scroll_to_percentage(driver: WebDriver, ratio: float) -> None:
+#     """Scroll to a percentage of the page
 
-    Args:
-        driver (WebDriver): The webdriver to use
-        ratio (float): The percentage to scroll to
+#     Args:
+#         driver (WebDriver): The webdriver to use
+#         ratio (float): The percentage to scroll to
 
-    Raises:
-        ValueError: If the ratio is not between 0 and 1
-    """
-    if ratio < 0 or ratio > 1:
-        raise ValueError("Percentage should be between 0 and 1")
-    driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight * {ratio});")
+#     Raises:
+#         ValueError: If the ratio is not between 0 and 1
+#     """
+#     if ratio < 0 or ratio > 1:
+#         raise ValueError("Percentage should be between 0 and 1")
+#     driver.execute_script(f"window.scrollTo(0, document.body.scrollHeight * {ratio});")
 
 
-def create_message(chunk: str, question: str) -> Dict[str, str]:
+def create_message(chunk: str, question: str) -> ChatMessage:
     """Create a message for the chat completion
 
     Args:
@@ -112,13 +111,13 @@ def create_message(chunk: str, question: str) -> Dict[str, str]:
     Returns:
         Dict[str, str]: The message to send to the chat completion
     """
-    return {
-        "role": "user",
-        "content": f'"""{chunk}""" Using the above text, answer the following'
+    message = ChatMessage(role='user', # type: ignore
+                    content=f'"""{chunk}""" Using the above text, answer the following'
         f' question: "{question}" -- if the question cannot be answered using the text,'
         " simply summarize the text in depth. "
-        "Include all factual information, numbers, stats etc if available.",
-    }
+        "Include all factual information, numbers, stats etc if available.")
+    
+    return message
 
 def write_to_file(filename: str, text: str) -> None:
     """Write text to a file

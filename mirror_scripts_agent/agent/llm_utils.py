@@ -9,7 +9,7 @@ import openai
 from langchain.adapters import openai as lc_openai
 from colorama import Fore, Style
 from openai.error import APIError, RateLimitError
-
+from llama_index.llms import ChatMessage
 from agent.prompts import auto_agent_instructions
 from config import Config
 
@@ -21,7 +21,7 @@ from typing import Optional
 import logging
 
 async def create_chat_completion(
-    messages: list,  # type: ignore
+    messages: list[ChatMessage],  # type: ignore
     model: Optional[str] = None,
     temperature: float = CFG.temperature,
     max_tokens: Optional[int] = None,
@@ -57,41 +57,37 @@ async def create_chat_completion(
     logging.error("Failed to get response from OpenAI API")
     raise RuntimeError("Failed to get response from OpenAI API")
 
+def init_llm(model, temperature, max_tokens):
+    if CFG.llm_provider == "ChatOpenAI":
+        from llama_index.llms import OpenAI
+        llm = OpenAI(model=model, temperature=temperature, max_tokens=max_tokens)
+        return llm
+
 
 async def send_chat_completion_request(
     messages, model, temperature, max_tokens, stream, websocket
 ) -> str:
+    llm = init_llm(model, temperature, max_tokens)
+
     if not stream:
-        result = await lc_openai.ChatCompletion.acreate(
-            model=model, # Change model here to use different models
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            provider=CFG.llm_provider, # Change provider here to use a different API
-        )
-        return result["choices"][0]["message"]["content"]
+        response = await llm.achat(messages=messages) # type: ignore
+        response = str(response).replace("assistant: ", "")
+        return response
     else:
-        return await stream_response(model, messages, temperature, max_tokens, websocket) 
+        return await stream_response(llm, messages, websocket) 
 
 
-async def stream_response(model, messages, temperature, max_tokens, websocket) -> str:
+async def stream_response(llm, messages, websocket) -> str:
     response = ""
     print(f"streaming response...")
 
-    async for chunk in await lc_openai.ChatCompletion.acreate(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            provider=CFG.llm_provider,
-            stream=True,
-    ):
-        content = chunk["choices"][0].get("delta", {}).get("content")
+    async for chunk in await llm.astream_chat(messages): 
+        content = chunk.delta
         if content is not None:
             response += content
             await websocket.send_json({"type": "report", "output": content})
     print(f"streaming response complete")
-    return response
+    return response.replace("assistant: ", "")
 
 
 async def choose_agent(task: str) -> dict:
@@ -106,8 +102,9 @@ async def choose_agent(task: str) -> dict:
         response = await create_chat_completion(
             model=CFG.smart_llm_model,
             messages=[
-                {"role": "system", "content": f"{auto_agent_instructions()}"},
-                {"role": "user", "content": f"task: {task}\nresponse:"}],
+                ChatMessage(role="system", content=f"{auto_agent_instructions()}"), # type: ignore
+                ChatMessage(role="user", content=f"task: {task}\nresponse:") # type: ignore
+            ],
             temperature=0,
         )
 

@@ -49,8 +49,6 @@ async def async_gather(url: str, question: str, content: str, websocket: WebSock
     """
     # loop = asyncio.get_event_loop()
     # executor = ThreadPoolExecutor(max_workers=8)
-    t1 = time.time()
-
     print(f"Scraping url {url} with question {question}")
     await websocket.send_json(
         {"type": "logs", "output": f"🔎 Browsing the {url} for relevant about: {question}..."})
@@ -58,8 +56,6 @@ async def async_gather(url: str, question: str, content: str, websocket: WebSock
     try:
         summary_text = await summary.summarize_text(content, question)
         # loop.run_in_executor(executor, summary.summarize_text, content, question)
-        print("async_gather:", time.time() - t1)
-
         await websocket.send_json(
             {"type": "logs", "output": f"📝 Information gathered from url {url}: {summary_text}"})
 

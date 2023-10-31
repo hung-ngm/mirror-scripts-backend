@@ -13,11 +13,11 @@ from processing.text import \
     create_message, \
     create_chat_completion, \
     read_txt_files, \
-    write_md_to_pdf
+    write_md_to_pdf, \
+    ChatMessage
 from config import Config
 from agent import prompts
 import os
-import string
 from actions.tavily_search import tavily_client
 import time
 
@@ -78,21 +78,16 @@ class ResearchAgent:
         return new_urls
 
     async def call_agent(self, action, stream=False, websocket=None):
-        t1 = time.time()
-        messages = [{
-            "role": "system",
-            "content": self.agent_role_prompt
-        }, {
-            "role": "user",
-            "content": action,
-        }]
+        messages = [
+            ChatMessage(role="system", content=self.agent_role_prompt), #type: ignore
+            ChatMessage(role="user", content=action) #type: ignore
+        ]
         answer = await create_chat_completion(
             model=CFG.smart_llm_model,
             messages=messages,
             stream=stream,
             websocket=websocket,
         )
-        print('call_agent:', time.time() - t1)
         return answer
 
     async def create_search_queries(self):
@@ -114,7 +109,7 @@ class ResearchAgent:
         """
         print(f"Running async_search on query: {query}")
         t1 = time.time()
-        search_results = tavily_client.search(query, search_depth="advanced", include_raw_content=True,  max_results=5)
+        search_results = tavily_client.search(query, search_depth="advanced", include_raw_content=False,  max_results=1) # TODO: remember to change back 
         print("Tavily search:", time.time() - t1)
         urls = [result['url'] for result in search_results['results']] #type: ignore
 
